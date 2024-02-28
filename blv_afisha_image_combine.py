@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import datetime
 import os
+import subprocess
 
 def combine_images(image_path1, image_path2, base_output_path, output_filename):
     # Load the images
@@ -78,6 +79,31 @@ def create_video(image_path, video_length, fps=25):
     except Exception as e:
         print(f"Error deleting the combined image: {e}")
 
+    return video_output_path
+
+def reduce_bitrate(video_path, target_bitrate="1500k"):
+    # Temporary output video path
+    temp_output_video_path = video_path.replace(".mp4", "_temp.mp4")
+    
+    # FFmpeg command to reduce the bitrate
+    command = [
+        'ffmpeg', '-i', video_path, '-b:v', target_bitrate,
+        '-bufsize', target_bitrate, '-maxrate', target_bitrate,
+        temp_output_video_path
+    ]
+    
+    try:
+        # Execute FFmpeg command
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        
+        # Overwrite the original file with the reduced bitrate version
+        os.rename(temp_output_video_path, video_path)
+        print("Original file replaced successfully with reduced bitrate version.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to reduce bitrate: {e}")
+    except Exception as e:
+        print(f"Error during file replacement: {e}")
+
 
 # Fixed path for img2
 image_path2 = '/Users/danvornovitskii/Documents/Mercury Storage/Barvikha/blv_screen_bottom.jpg'  # Update this to your img2's actual path
@@ -100,4 +126,7 @@ output_file_path = combine_images(image_path1, image_path2, base_output_path, ou
 video_length = int(input("Enter the desired video length in seconds: "))
 
 # Call the create_video function with the path of the combined image, the input video length, and fps
-create_video(output_file_path, video_length)
+video_output_path = create_video(output_file_path, video_length)
+
+# Reduce video bitrate to 1500
+reduce_bitrate(video_output_path)
