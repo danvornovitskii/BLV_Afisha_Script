@@ -6,6 +6,8 @@ import numpy as np
 import datetime
 import os
 import subprocess
+import requests 
+import pprint
 
 def combine_images(image_path1, image_path2, base_output_path, output_filename):
     # Load the images
@@ -99,11 +101,37 @@ def reduce_bitrate(video_path, target_bitrate="1500k"):
         # Overwrite the original file with the reduced bitrate version
         os.rename(temp_output_video_path, video_path)
         print("Original file replaced successfully with reduced bitrate version.")
+        return video_path
     except subprocess.CalledProcessError as e:
         print(f"Failed to reduce bitrate: {e}")
     except Exception as e:
         print(f"Error during file replacement: {e}")
 
+################### Yandex Disk Integrations
+URL = 'https://cloud-api.yandex.net/v1/disk/resources'
+TOKEN = 'y0_AgAAAAA3Qp8VAADLWwAAAAD8hU8WAADxbbacRWBGKaIKYIHn8795va9d2g'
+headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f'OAuth {TOKEN}'}
+
+def create_folder(path):
+    # Создание папки. \n path: Путь к создаваемой папке
+    requests.put(f'{URL}?path=/Mercury%20WORK/Barvikha%20Screen/{path}', headers=headers)
+
+    return f'/Mercury%20WORK/Barvikha%20Screen/{path}'
+
+
+def upload_file(loadfile, savefile, replace=False):
+    #Загрузка файла.
+    #savefile: Путь к файлу на Диске
+    #loadfile: Путь к загружаемому файлу
+    #replace: true or false Замена файла на Диск
+    res = requests.get(f'{URL}/upload?path={savefile}&overwrite={replace}', headers=headers).json()
+    with open(loadfile, 'rb') as f:
+        try:
+            requests.put(res['href'], files={'file':f})
+        except KeyError:
+            print(res)
+
+####################
 
 # Fixed path for img2
 image_path2 = '/Users/danvornovitskii/Documents/Mercury Storage/Barvikha/blv_screen_bottom.jpg'  # Update this to your img2's actual path
@@ -129,4 +157,11 @@ video_length = int(input("Enter the desired video length in seconds: "))
 video_output_path = create_video(output_file_path, video_length)
 
 # Reduce video bitrate to 1500
-reduce_bitrate(video_output_path)
+final_video_path = reduce_bitrate(video_output_path)
+
+# Create folder in Yandex Disk with today's date
+today = datetime.date.today().isoformat()
+yandex_folder_path = create_folder(today)
+
+upload_file(final_video_path, f'{yandex_folder_path}/{output_filename_input}.mp4')
+print(f'https://disk.yandex.ru/client/disk/{yandex_folder_path}')
