@@ -8,6 +8,7 @@ import os
 import subprocess
 import requests 
 import pprint
+import pyperclip
 
 def combine_images(image_path1, image_path2, base_output_path, output_filename):
     # Load the images
@@ -109,6 +110,7 @@ def reduce_bitrate(video_path, target_bitrate="1500k"):
 
 ################### Yandex Disk Integrations
 URL = 'https://cloud-api.yandex.net/v1/disk/resources'
+public_URL = 'https://cloud-api.yandex.net/v1/disk/public/resources'
 TOKEN = 'y0_AgAAAAA3Qp8VAADLWwAAAAD8hU8WAADxbbacRWBGKaIKYIHn8795va9d2g'
 headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': f'OAuth {TOKEN}'}
 
@@ -131,7 +133,13 @@ def upload_file(loadfile, savefile, replace=False):
         except KeyError:
             print(res)
 
-####################
+def publish_file(path):
+    res = requests.put(f'{URL}/publish?path={path}', headers=headers)
+    meta = requests.get(f'{URL}/?path={path}', headers=headers).json()
+    pyperclip.copy(meta['public_url'])
+    print('Public URL copied to the clipboard.')
+
+########################################
 
 # Fixed path for img2
 image_path2 = '/Users/danvornovitskii/Documents/Mercury Storage/Barvikha/blv_screen_bottom.jpg'  # Update this to your img2's actual path
@@ -164,4 +172,5 @@ today = datetime.date.today().isoformat()
 yandex_folder_path = create_folder(today)
 
 upload_file(final_video_path, f'{yandex_folder_path}/{output_filename_input}.mp4')
-print(f'https://disk.yandex.ru/client/disk/{yandex_folder_path}')
+publish_file(yandex_folder_path)
+# print(f'https://disk.yandex.ru/client/disk/{yandex_folder_path}')
